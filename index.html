@@ -297,12 +297,51 @@
     color: #f5ecd7;
   }
 
-  /* D-Pad */
+  /* Head type selector */
+  .head-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .head-btn {
+    font-family: inherit;
+    font-size: 0.72rem;
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 2px solid var(--outline);
+    background: #f5ecd7;
+    color: var(--textDim);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+
+  .head-btn.active {
+    background: #5aafc4;
+    border-color: var(--outline);
+    color: #fdf5f0;
+  }
+
+  .head-btn:hover {
+    background: #ede0c8;
+    color: var(--text);
+  }
+
+  .head-btn.active:hover {
+    background: #4a9fb4;
+    color: #fdf5f0;
+  }
+
+  /* D-Pad — larger for mobile */
   .dpad {
     display: none;
     position: relative;
-    width: 140px;
-    height: 140px;
+    width: 180px;
+    height: 180px;
     margin-top: 4px;
   }
 
@@ -310,9 +349,9 @@
 
   .dpad-btn {
     position: absolute;
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
     border: 2.5px solid var(--outline);
     background: #f5ecd7;
     display: flex;
@@ -331,8 +370,8 @@
   }
 
   .dpad-btn svg {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     fill: none;
     stroke: var(--outline);
     stroke-width: 2.5;
@@ -340,11 +379,11 @@
     stroke-linejoin: round;
   }
 
-  .dpad-up    { top: 0;   left: 48px; }
-  .dpad-down  { bottom: 0; left: 48px; }
-  .dpad-left  { top: 48px; left: 0; }
-  .dpad-right { top: 48px; right: 0; }
-  .dpad-center { top: 48px; left: 48px; border-radius: 50%; opacity: 0.2; border-color: var(--outline); }
+  .dpad-up    { top: 0;   left: 62px; }
+  .dpad-down  { bottom: 0; left: 62px; }
+  .dpad-left  { top: 62px; left: 0; }
+  .dpad-right { top: 62px; right: 0; }
+  .dpad-center { top: 62px; left: 62px; border-radius: 50%; opacity: 0.2; border-color: var(--outline); }
 
   /* Key hints */
   .key-hints {
@@ -432,6 +471,11 @@
         <button class="diff-btn active" data-diff="normal">🌤️ 普通</button>
         <button class="diff-btn" data-diff="hard">⛅ 困难</button>
         <button class="diff-btn" data-diff="extreme">🌩️ 极限</button>
+      </div>
+      <div class="head-selector" id="headSelector">
+        <span style="font-size:0.65rem;color:var(--textDim);letter-spacing:1px;margin-right:2px;">🐍 蛇头:</span>
+        <button class="head-btn active" data-head="sakiko">💙 祥子</button>
+        <button class="head-btn" data-head="normal">🐍 普通</button>
       </div>
       <button class="btn primary" id="btnStart">开 始 游 戏</button>
       <div class="key-hints" style="margin-top:14px;">
@@ -852,6 +896,7 @@ class Game {
 
     this.difficulty = 'normal';
     this.diffConfig = CONFIG.DIFFICULTY.normal;
+    this.headType = localStorage.getItem('snakeHeadType') || 'sakiko';
     this.score = 0;
     this.highScore = parseInt(localStorage.getItem('snakeHighScoreAnime')) || 0;
     this.combo = 0;
@@ -943,6 +988,11 @@ class Game {
     document.getElementById('btnPlayAgain').addEventListener('click', () => this.startGame());
     document.getElementById('btnHome').addEventListener('click', () => this.goHome());
 
+    // Init head type active state
+    document.querySelectorAll('.head-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.head === this.headType);
+    });
+
     document.querySelectorAll('.diff-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
@@ -950,6 +1000,15 @@ class Game {
         this.difficulty = btn.dataset.diff;
         this.diffConfig = CONFIG.DIFFICULTY[this.difficulty];
         this.tickInterval = this.diffConfig.interval;
+      });
+    });
+
+    document.querySelectorAll('.head-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.head-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.headType = btn.dataset.head;
+        localStorage.setItem('snakeHeadType', this.headType);
       });
     });
   }
@@ -1316,8 +1375,11 @@ class Game {
       ctx.globalAlpha = alpha;
 
       if (isHead) {
-        // 🎭 Sakiko chibi big head (Ave Mujica)
-        drawSakikoHead(ctx, px, py, cs, snake.direction);
+        if (this.headType === 'normal') {
+          drawNormalHead(ctx, px, py, segSize, radius, snake.direction);
+        } else {
+          drawSakikoHead(ctx, px, py, cs, snake.direction);
+        }
       } else {
         // Pick flat colors for body segments
         let baseColor, shadowColor;
@@ -1523,6 +1585,124 @@ function drawStar(ctx, cx, cy, outerR, innerR, points) {
 }
 
 // ============================================================
+//  🐍 NORMAL HEAD — retro anime cel-shaded snake head
+// ============================================================
+function drawNormalHead(ctx, cx, cy, segSize, radius, dir) {
+  const OUTLINE = '#3a2a30';
+  const COLOR_HEAD = '#f4a88a';
+  const SHADOW_HEAD = '#d48870';
+  const HIGHLIGHT = '#fde4d8';
+  const s2 = segSize / 2;
+  const x = cx - s2;
+  const y = cy - s2;
+
+  // Rotate face features toward direction
+  const angle = Math.atan2(dir.y, dir.x);
+
+  // 1. Base fill (round-rect head)
+  ctx.fillStyle = COLOR_HEAD;
+  roundRect(ctx, x, y, segSize, segSize, radius);
+  ctx.fill();
+
+  // 2. Hard-edge shadow (bottom-right)
+  ctx.fillStyle = SHADOW_HEAD;
+  ctx.beginPath();
+  ctx.moveTo(x + segSize * 0.35, y + segSize);
+  ctx.lineTo(x + segSize, y + segSize);
+  ctx.lineTo(x + segSize, y + segSize * 0.35);
+  ctx.arc(x + segSize - radius, y + segSize - radius, radius, 0, Math.PI / 2);
+  ctx.fill();
+
+  // 3. Hard-edge highlight (top-left)
+  ctx.fillStyle = HIGHLIGHT;
+  ctx.beginPath();
+  ctx.moveTo(x, y + segSize * 0.25);
+  ctx.lineTo(x, y);
+  ctx.lineTo(x + segSize * 0.25, y);
+  ctx.arc(x + radius, y + radius, radius, Math.PI, Math.PI * 1.5);
+  ctx.fill();
+
+  // 4. Thick outline
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, segSize, segSize, radius);
+  ctx.stroke();
+
+  // 5. Retro anime eyes
+  const eyeRX = segSize * 0.22;
+  const eyeRY = segSize * 0.28;
+  const perpX = -dir.y;
+  const perpY = -dir.x;
+  const eyeOffX = dir.x * segSize * 0.1;
+  const eyeOffY = dir.y * segSize * 0.1;
+
+  const eyePositions = [
+    { x: cx + perpX * segSize * 0.18 + eyeOffX, y: cy + perpY * segSize * 0.18 + eyeOffY },
+    { x: cx - perpX * segSize * 0.18 + eyeOffX, y: cy - perpY * segSize * 0.18 + eyeOffY },
+  ];
+
+  for (const ep of eyePositions) {
+    // Eye white
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.ellipse(ep.x, ep.y, eyeRX, eyeRY, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Upper eyelid
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.ellipse(ep.x, ep.y - eyeRY * 0.1, eyeRX * 0.82, eyeRY * 0.42, 0, Math.PI, 0);
+    ctx.stroke();
+
+    // Iris (amber)
+    const irisR = eyeRX * 0.58;
+    ctx.fillStyle = '#b89060';
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(ep.x + dir.x * 0.7, ep.y + dir.y * 0.7, irisR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pupil
+    ctx.fillStyle = OUTLINE;
+    ctx.beginPath();
+    ctx.arc(ep.x + dir.x * 1.1, ep.y + dir.y * 1.1, irisR * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sparkles
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = 'transparent';
+    ctx.lineWidth = 0;
+    ctx.beginPath();
+    ctx.arc(ep.x - irisR * 0.22, ep.y - irisR * 0.3, irisR * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ep.x + irisR * 0.25, ep.y + irisR * 0.2, irisR * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Blush
+    ctx.fillStyle = 'rgba(220,140,130,0.45)';
+    ctx.strokeStyle = 'rgba(180,100,90,0.35)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.ellipse(ep.x - perpX * segSize * 0.1, ep.y - perpY * segSize * 0.1 + eyeRY * 0.55, eyeRX * 0.45, eyeRY * 0.25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // 6. Mouth — tiny :3 curve
+  ctx.fillStyle = OUTLINE;
+  ctx.beginPath();
+  ctx.arc(cx + dir.x * segSize * 0.18, cy + dir.y * segSize * 0.18 + 0.4, segSize * 0.08, 0, Math.PI);
+  ctx.fill();
+}
+
+// ============================================================
 //  🎭 SAKIKO CHIBI HEAD (Ave Mujica — 丰川祥子)
 //  Retro cel-shaded chibi portrait
 // ============================================================
@@ -1535,7 +1715,7 @@ function drawSakikoHead(ctx, cx, cy, cs, dir) {
   ctx.rotate(angle);
 
   const u = cs / 30;        // unit scale factor
-  const hr = 21 * u;        // chibi head radius (big head = ~1.4× cell)
+  const hr = 9 * u;         // chibi head radius (small, nezumimi size)
   const OUTLINE = '#3a2a30';
   const LW = (w) => Math.max(w * u, 0.5);
 
