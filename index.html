@@ -23,7 +23,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    background: linear-gradient(135deg, #fce4ec 0%, #f8e8ff 25%, #e8eaf6 50%, #fce4ec 75%, #f3e5f5 100%);
+    background: linear-gradient(135deg, #f5e0e8 0%, #eeddf5 25%, #dfe0f0 50%, #f0dde5 75%, #ecddf0 100%);
     background-attachment: fixed;
     display: flex;
     justify-content: center;
@@ -748,12 +748,12 @@ class Food {
   }
   get color() {
     if (this.type === 'golden') return '#ffb347';
-    if (this.type === 'speed') return '#67e8f9';
+    if (this.type === 'speed') return '#00e5ff';
     return '#ff6b9d';
   }
   get label() {
     if (this.type === 'golden') return '⭐';
-    if (this.type === 'speed') return '🍡';
+    if (this.type === 'speed') return '⚡';
     return '🍙';
   }
 }
@@ -1123,7 +1123,7 @@ class Game {
       }
 
       let elapsed = timestamp - this.lastTickTime;
-      const effInt = this.speedBoostActive ? this.tickInterval * 0.55 : this.tickInterval;
+      const effInt = this.speedBoostActive ? this.tickInterval * 0.75 : this.tickInterval;
       while (elapsed >= effInt && this.state === 'playing') {
         this.tick();
         elapsed -= effInt;
@@ -1147,7 +1147,7 @@ class Game {
     }
 
     const tp = this.state === 'playing'
-      ? Math.min((timestamp - this.lastTickTime) / (this.speedBoostActive ? this.tickInterval * 0.55 : this.tickInterval), 1)
+      ? Math.min((timestamp - this.lastTickTime) / (this.speedBoostActive ? this.tickInterval * 0.75 : this.tickInterval), 1)
       : 0;
     this.render(tp);
     this.updateUI();
@@ -1220,17 +1220,18 @@ class Game {
       );
     }
 
-    // ---- Background: soft pastel gradient ----
+    // ---- Background: sakura twilight gradient ----
     const bgGrad = ctx.createLinearGradient(0, 0, W, W);
-    bgGrad.addColorStop(0, '#fff5f7');
-    bgGrad.addColorStop(0.3, '#fef0ff');
-    bgGrad.addColorStop(0.6, '#f0f0ff');
-    bgGrad.addColorStop(1, '#fff5fa');
+    bgGrad.addColorStop(0, '#fce4ec');
+    bgGrad.addColorStop(0.25, '#f8e0f0');
+    bgGrad.addColorStop(0.5, '#ede0f5');
+    bgGrad.addColorStop(0.75, '#f8e0f0');
+    bgGrad.addColorStop(1, '#fce4ec');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(-4, -4, W + 8, W + 8);
 
-    // Grid - very subtle pink
-    ctx.strokeStyle = 'rgba(255,182,193,0.12)';
+    // Grid - slightly more visible sakura pink
+    ctx.strokeStyle = 'rgba(236,160,172,0.18)';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= this.gridSize; i++) {
       const pos = i * cs;
@@ -1441,26 +1442,41 @@ class Game {
         drawStar(ctx, fx, fy, foodR * pulse * 0.55, foodR * pulse * 0.22, 5);
         ctx.fill();
       } else if (this.food.type === 'speed') {
-        // 🍡 Dango (three circles)
-        ctx.fillStyle = '#ffb3c6';
+        // ⚡ Bright cyan lightning candy — highly distinct from onigiri
+        ctx.shadowColor = 'rgba(103,232,249,0.6)';
+        ctx.shadowBlur = 14;
+        // Outer glow ring
+        ctx.fillStyle = 'rgba(103,232,249,0.25)';
         ctx.beginPath();
-        ctx.arc(fx, fy - foodR * 0.5, foodR * 0.45, 0, Math.PI * 2);
+        ctx.arc(fx, fy, foodR * pulse * 1.15, 0, Math.PI * 2);
         ctx.fill();
+        // Main body: cyan diamond/crystal
+        const diamondGrad = ctx.createLinearGradient(fx, fy - foodR, fx, fy + foodR);
+        diamondGrad.addColorStop(0, '#e0ffff');
+        diamondGrad.addColorStop(0.3, '#67e8f9');
+        diamondGrad.addColorStop(0.7, '#22d3ee');
+        diamondGrad.addColorStop(1, '#0891b2');
+        ctx.fillStyle = diamondGrad;
+        ctx.beginPath();
+        ctx.moveTo(fx, fy - foodR * pulse);
+        ctx.lineTo(fx + foodR * pulse * 0.55, fy);
+        ctx.lineTo(fx, fy + foodR * pulse);
+        ctx.lineTo(fx - foodR * pulse * 0.55, fy);
+        ctx.closePath();
+        ctx.fill();
+        // Inner white sparkle
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath();
+        ctx.arc(fx - foodR * 0.08, fy - foodR * 0.22, foodR * pulse * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        // Lightning bolt icon inside
         ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(fx, fy + foodR * 0.15, foodR * 0.45, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#c4f0c4';
-        ctx.beginPath();
-        ctx.arc(fx, fy + foodR * 0.8, foodR * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-        // Skewer line
-        ctx.strokeStyle = '#d4c4a8';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(fx, fy - foodR * 0.9);
-        ctx.lineTo(fx, fy + foodR * 1.15);
-        ctx.stroke();
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = '#fff';
+        ctx.font = `${foodR * 0.9}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚡', fx, fy + 0.5);
       } else {
         // 🍙 Onigiri (triangle with nori)
         const triH = foodR * pulse * 1.1;
