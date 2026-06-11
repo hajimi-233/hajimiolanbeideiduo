@@ -1294,10 +1294,8 @@ class Game {
     // Flat body colors: warm peach → muted coral (alternating)
     const COLOR_A = '#f4b8a0'; // warm peach
     const COLOR_B = '#f4c8b4'; // lighter peach
-    const COLOR_HEAD = '#f4a88a'; // slightly deeper peach for head
     const SHADOW_A = '#d49880'; // flat shadow for A
     const SHADOW_B = '#d4a894'; // flat shadow for B
-    const SHADOW_HEAD = '#d48870'; // flat shadow for head
     const HIGHLIGHT = '#fde4d8'; // flat highlight
 
     // Draw body → tail (head drawn last = on top)
@@ -1317,151 +1315,46 @@ class Game {
       ctx.save();
       ctx.globalAlpha = alpha;
 
-      // Pick flat colors
-      let baseColor, shadowColor;
-      if (isHead) { baseColor = COLOR_HEAD; shadowColor = SHADOW_HEAD; }
-      else if (i % 2 === 0) { baseColor = COLOR_A; shadowColor = SHADOW_A; }
-      else { baseColor = COLOR_B; shadowColor = SHADOW_B; }
+      if (isHead) {
+        // 🎭 Sakiko chibi big head (Ave Mujica)
+        drawSakikoHead(ctx, px, py, cs, snake.direction);
+      } else {
+        // Pick flat colors for body segments
+        let baseColor, shadowColor;
+        if (i % 2 === 0) { baseColor = COLOR_A; shadowColor = SHADOW_A; }
+        else { baseColor = COLOR_B; shadowColor = SHADOW_B; }
 
-      // 1. Base fill
-      ctx.fillStyle = baseColor;
-      roundRect(ctx, x, y, segSize, segSize, radius);
-      ctx.fill();
+        // 1. Base fill
+        ctx.fillStyle = baseColor;
+        roundRect(ctx, x, y, segSize, segSize, radius);
+        ctx.fill();
 
-      // 2. Hard-edge shadow (bottom-right quadrant) — cel shading
-      ctx.fillStyle = shadowColor;
-      ctx.beginPath();
-      ctx.moveTo(x + segSize * 0.35, y + segSize);
-      ctx.lineTo(x + segSize, y + segSize);
-      ctx.lineTo(x + segSize, y + segSize * 0.35);
-      ctx.arc(x + segSize - radius, y + segSize - radius, radius, 0, Math.PI/2);
-      ctx.fill();
+        // 2. Hard-edge shadow (bottom-right quadrant) — cel shading
+        ctx.fillStyle = shadowColor;
+        ctx.beginPath();
+        ctx.moveTo(x + segSize * 0.35, y + segSize);
+        ctx.lineTo(x + segSize, y + segSize);
+        ctx.lineTo(x + segSize, y + segSize * 0.35);
+        ctx.arc(x + segSize - radius, y + segSize - radius, radius, 0, Math.PI/2);
+        ctx.fill();
 
-      // 3. Hard-edge highlight (top-left quadrant)
-      ctx.fillStyle = HIGHLIGHT;
-      ctx.beginPath();
-      ctx.moveTo(x, y + segSize * 0.25);
-      ctx.lineTo(x, y);
-      ctx.lineTo(x + segSize * 0.25, y);
-      ctx.arc(x + radius, y + radius, radius, Math.PI, Math.PI*1.5);
-      ctx.fill();
+        // 3. Hard-edge highlight (top-left quadrant)
+        ctx.fillStyle = HIGHLIGHT;
+        ctx.beginPath();
+        ctx.moveTo(x, y + segSize * 0.25);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x + segSize * 0.25, y);
+        ctx.arc(x + radius, y + radius, radius, Math.PI, Math.PI*1.5);
+        ctx.fill();
 
-      // 4. Thick outline
-      ctx.strokeStyle = OUTLINE;
-      ctx.lineWidth = 2;
-      roundRect(ctx, x, y, segSize, segSize, radius);
-      ctx.stroke();
+        // 4. Thick outline
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 2;
+        roundRect(ctx, x, y, segSize, segSize, radius);
+        ctx.stroke();
+      }
 
       ctx.restore();
-
-      // 🎀 Ribbon/bow on head (cel-shaded)
-      if (isHead) {
-        const dir = snake.direction;
-        const bowX = px - dir.x * cs * 0.28;
-        const bowY = py - dir.y * cs * 0.28;
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        // Left loop
-        ctx.fillStyle = '#d4707a';
-        ctx.strokeStyle = OUTLINE;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.ellipse(bowX - 1.5, bowY - 2, segSize*0.22, segSize*0.13, -0.5, 0, Math.PI*2);
-        ctx.fill(); ctx.stroke();
-        // Right loop
-        ctx.beginPath();
-        ctx.ellipse(bowX + 1.5, bowY + 2, segSize*0.22, segSize*0.13, 0.5, 0, Math.PI*2);
-        ctx.fill(); ctx.stroke();
-        // Center knot
-        ctx.fillStyle = '#f5ecd7';
-        ctx.beginPath();
-        ctx.arc(bowX, bowY, segSize*0.07, 0, Math.PI*2);
-        ctx.fill(); ctx.stroke();
-        ctx.restore();
-      }
-
-      // 👁️ Retro Anime Eyes (cel-shaded, outlined)
-      if (isHead) {
-        const dir = snake.direction;
-        const eyeOffX = dir.x * cs * 0.12;
-        const eyeOffY = dir.y * cs * 0.12;
-        const eyeRX = segSize * 0.24;
-        const eyeRY = segSize * 0.30;
-
-        const perpX = -dir.y;
-        const perpY = -dir.x;
-        const eyePositions = [
-          { x: px + perpX * cs * 0.18 + eyeOffX, y: py + perpY * cs * 0.18 + eyeOffY },
-          { x: px - perpX * cs * 0.18 + eyeOffX, y: py - perpY * cs * 0.18 + eyeOffY },
-        ];
-
-        for (const ep of eyePositions) {
-          // Eye white — flat white oval with outline
-          ctx.fillStyle = '#fff';
-          ctx.strokeStyle = OUTLINE;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.ellipse(ep.x, ep.y, eyeRX, eyeRY, 0, 0, Math.PI * 2);
-          ctx.fill(); ctx.stroke();
-
-          // Upper eyelid — thick line (retro anime look)
-          ctx.strokeStyle = OUTLINE;
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.ellipse(ep.x, ep.y - eyeRY * 0.12, eyeRX * 0.85, eyeRY * 0.45, 0, Math.PI, 0);
-          ctx.stroke();
-
-          // Iris — flat amber/brown (retro anime eye color)
-          const irisR = eyeRX * 0.6;
-          ctx.fillStyle = '#b89060';
-          ctx.strokeStyle = OUTLINE;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(ep.x + dir.x * 0.8, ep.y + dir.y * 0.8, irisR, 0, Math.PI * 2);
-          ctx.fill(); ctx.stroke();
-
-          // Pupil — solid dark
-          ctx.fillStyle = OUTLINE;
-          ctx.beginPath();
-          ctx.arc(ep.x + dir.x * 1.2, ep.y + dir.y * 1.2, irisR * 0.52, 0, Math.PI * 2);
-          ctx.fill();
-
-          // ✨ Hard white sparkle highlights (cel-style, no soft glow)
-          ctx.fillStyle = '#fff';
-          ctx.strokeStyle = 'transparent';
-          ctx.lineWidth = 0;
-          // Large highlight upper-left
-          ctx.beginPath();
-          ctx.arc(ep.x - irisR*0.25, ep.y - irisR*0.35, irisR * 0.32, 0, Math.PI * 2);
-          ctx.fill();
-          // Small highlight lower-right
-          ctx.beginPath();
-          ctx.arc(ep.x + irisR*0.3, ep.y + irisR*0.25, irisR * 0.14, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // 😊 Blush — flat pink ellipse with soft outline
-        for (const ep of eyePositions) {
-          ctx.fillStyle = 'rgba(220,140,130,0.5)';
-          ctx.strokeStyle = 'rgba(180,100,90,0.4)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.ellipse(
-            ep.x - perpX * cs * 0.12,
-            ep.y - perpY * cs * 0.12 + eyeRY * 0.6,
-            eyeRX * 0.5, eyeRY * 0.28, 0, 0, Math.PI * 2
-          );
-          ctx.fill(); ctx.stroke();
-        }
-
-        // Tiny :3 mouth — simple curve
-        ctx.fillStyle = OUTLINE;
-        ctx.beginPath();
-        const mouthX = px + dir.x * cs * 0.2;
-        const mouthY = py + dir.y * cs * 0.2;
-        ctx.arc(mouthX, mouthY + 0.5, segSize * 0.09, 0, Math.PI);
-        ctx.fill();
-      }
     }
 
     // ---- Food Rendering ----
@@ -1627,6 +1520,294 @@ function drawStar(ctx, cx, cy, outerR, innerR, points) {
     else ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
   }
   ctx.closePath();
+}
+
+// ============================================================
+//  🎭 SAKIKO CHIBI HEAD (Ave Mujica — 丰川祥子)
+//  Retro cel-shaded chibi portrait
+// ============================================================
+function drawSakikoHead(ctx, cx, cy, cs, dir) {
+  ctx.save();
+
+  // Rotate face to movement direction (face drawn facing +X)
+  const angle = Math.atan2(dir.y, dir.x);
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  const u = cs / 30;        // unit scale factor
+  const hr = 21 * u;        // chibi head radius (big head = ~1.4× cell)
+  const OUTLINE = '#3a2a30';
+  const LW = (w) => Math.max(w * u, 0.5);
+
+  // ── Sakiko's signature palette ──
+  const H_SKY = '#7ec8e0';    // light teal hair (Sakiko 水蓝色)
+  const H_DARK = '#5aa0b8';   // hair shadow
+  const H_LITE = '#a8ddf0';   // hair highlight
+  const SKIN = '#fef2ec';     // pale skin
+  const SKIN_SH = '#e8d0c0';  // skin shadow
+  const EYE_B = '#4a8ab8';    // blue eyes
+  const EYE_D = '#1a4060';    // pupil
+  const MOUTH_C = '#d49090';  // soft pink mouth
+  const COLLAR = '#243050';   // dark blue uniform collar
+  const WHITE = '#fafafc';
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 1. BACK HAIR (large circle behind face)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ctx.fillStyle = H_SKY;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(1.8);
+  ctx.beginPath();
+  ctx.arc(-hr * 0.08, hr * 0.02, hr * 1.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Back hair shadow (lower arc)
+  ctx.fillStyle = H_DARK;
+  ctx.strokeStyle = 'transparent';
+  ctx.lineWidth = 0;
+  ctx.beginPath();
+  ctx.moveTo(hr * 0.5, hr * 0.5);
+  ctx.arc(-hr * 0.08, hr * 0.02, hr * 1.12, 0.35, 2.8);
+  ctx.fill();
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 2. SIDE HAIR STRANDS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Left strand (back direction)
+  ctx.fillStyle = H_SKY;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(1.2);
+  ctx.beginPath();
+  ctx.ellipse(-hr * 0.55, -hr * 0.08, hr * 0.28, hr * 0.58, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Right strand (forward direction)
+  ctx.fillStyle = H_SKY;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(1.2);
+  ctx.beginPath();
+  ctx.ellipse(hr * 0.52, hr * 0.12, hr * 0.24, hr * 0.52, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 3. FACE CIRCLE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ctx.fillStyle = SKIN;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(2);
+  ctx.beginPath();
+  ctx.arc(0, 0, hr, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Face shadow (chin area)
+  ctx.fillStyle = SKIN_SH;
+  ctx.strokeStyle = 'transparent';
+  ctx.lineWidth = 0;
+  ctx.beginPath();
+  ctx.arc(0, hr * 0.12, hr * 0.82, Math.PI * 0.78, Math.PI * 2.22);
+  ctx.fill();
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 4. FRONT BANGS  (Sakiko's straight bangs)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ctx.fillStyle = H_SKY;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(1.4);
+  ctx.beginPath();
+  ctx.arc(hr * 0.14, -hr * 0.08, hr * 0.88, Math.PI * 1.06, Math.PI * 1.88);
+  ctx.fill();
+  ctx.stroke();
+
+  // Center bang point (Sakiko's middle-part detail)
+  ctx.fillStyle = H_SKY;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(1);
+  ctx.beginPath();
+  ctx.moveTo(-hr * 0.06, -hr * 0.7);
+  ctx.lineTo(hr * 0.02, -hr * 0.35);
+  ctx.lineTo(hr * 0.15, -hr * 0.65);
+  ctx.arc(hr * 0.14, -hr * 0.08, hr * 0.88, Math.PI * 1.6, Math.PI * 1.82);
+  ctx.fill();
+  ctx.stroke();
+
+  // Bangs highlight
+  ctx.fillStyle = H_LITE;
+  ctx.strokeStyle = 'transparent';
+  ctx.lineWidth = 0;
+  ctx.beginPath();
+  ctx.arc(hr * 0.08, -hr * 0.32, hr * 0.48, Math.PI * 1.16, Math.PI * 1.58);
+  ctx.fill();
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 5. HAIR ACCESSORY (small blue flower ribbon — left top)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ctx.fillStyle = '#3a6590';
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(0.9);
+  for (let p = 0; p < 3; p++) {
+    const pa = -Math.PI * 0.5 + p * Math.PI * 0.33 - 0.15;
+    ctx.beginPath();
+    ctx.arc(
+      -hr * 0.38 + Math.cos(pa) * hr * 0.07,
+      -hr * 0.58 + Math.sin(pa) * hr * 0.07,
+      hr * 0.13, 0, Math.PI * 2
+    );
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#d4a84a';
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(0.6);
+  ctx.beginPath();
+  ctx.arc(-hr * 0.38, -hr * 0.55, hr * 0.05, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 6. EYES (large blue anime eyes)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const eRX = hr * 0.29;
+  const eRY = hr * 0.37;
+  const eBaseY = -hr * 0.06;
+
+  for (let side = -1; side <= 1; side += 2) {
+    const ex = side * hr * 0.34;
+    const ey = eBaseY;
+
+    // Eye white
+    ctx.fillStyle = WHITE;
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = LW(1.3);
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, eRX, eRY, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Upper eyelid (thick anime line)
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = LW(2);
+    ctx.beginPath();
+    ctx.arc(ex, ey - eRY * 0.04, eRX * 0.8, Math.PI, 0);
+    ctx.stroke();
+
+    // Iris (blue)
+    ctx.fillStyle = EYE_B;
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = LW(0.9);
+    ctx.beginPath();
+    ctx.arc(ex + eRX * 0.06, ey, eRX * 0.56, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pupil
+    ctx.fillStyle = EYE_D;
+    ctx.beginPath();
+    ctx.arc(ex + eRX * 0.1, ey, eRX * 0.26, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ✨ Sparkles (cel-style hard white dots)
+    ctx.fillStyle = WHITE;
+    ctx.strokeStyle = 'transparent';
+    ctx.lineWidth = 0;
+    ctx.beginPath();
+    ctx.arc(ex - eRX * 0.1, ey - eRY * 0.16, eRX * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ex + eRX * 0.2, ey + eRY * 0.2, eRX * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyelashes (top corners)
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = LW(1);
+    ctx.beginPath();
+    ctx.moveTo(ex - eRX * 0.65, ey - eRY * 0.6);
+    ctx.lineTo(ex - eRX * 0.82, ey - eRY * 0.82);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ex + eRX * 0.65, ey - eRY * 0.6);
+    ctx.lineTo(ex + eRX * 0.82, ey - eRY * 0.82);
+    ctx.stroke();
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 7. EYEBROWS (gentle arcs)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(1.1);
+  for (let side = -1; side <= 1; side += 2) {
+    ctx.beginPath();
+    ctx.moveTo(side * hr * 0.14, -hr * 0.34);
+    ctx.quadraticCurveTo(side * hr * 0.36, -hr * 0.4, side * hr * 0.54, -hr * 0.36);
+    ctx.stroke();
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 8. NOSE (tiny dot)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ctx.fillStyle = SKIN_SH;
+  ctx.strokeStyle = 'transparent';
+  ctx.lineWidth = 0;
+  ctx.beginPath();
+  ctx.arc(hr * 0.08, hr * 0.14, hr * 0.05, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 9. MOUTH (small cute smile)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ctx.fillStyle = MOUTH_C;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(0.7);
+  ctx.beginPath();
+  ctx.arc(hr * 0.04, hr * 0.28, hr * 0.13, 0, Math.PI);
+  ctx.fill();
+  ctx.stroke();
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 10. BLUSH (soft pink on cheeks)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  for (let side = -1; side <= 1; side += 2) {
+    ctx.fillStyle = 'rgba(230,155,145,0.32)';
+    ctx.strokeStyle = 'rgba(200,130,120,0.25)';
+    ctx.lineWidth = LW(0.5);
+    ctx.beginPath();
+    ctx.ellipse(side * hr * 0.46, hr * 0.2, hr * 0.15, hr * 0.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 11. COLLAR (Tsukinomori uniform — dark blue)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ctx.fillStyle = COLLAR;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(1.4);
+  ctx.beginPath();
+  ctx.moveTo(-hr * 0.55, hr * 0.6);
+  ctx.lineTo(0, hr * 0.22);
+  ctx.lineTo(hr * 0.55, hr * 0.6);
+  ctx.quadraticCurveTo(hr * 0.28, hr * 0.72, 0, hr * 0.56);
+  ctx.quadraticCurveTo(-hr * 0.28, hr * 0.72, -hr * 0.55, hr * 0.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // White collar ribbon
+  ctx.fillStyle = WHITE;
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = LW(0.7);
+  ctx.beginPath();
+  ctx.moveTo(-hr * 0.38, hr * 0.62);
+  ctx.lineTo(0, hr * 0.35);
+  ctx.lineTo(hr * 0.38, hr * 0.62);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 // ============================================================
